@@ -1,0 +1,39 @@
+{
+  "type": "datasource",
+  "name": "konker-ds",
+  "id": "konker-konker-ds",
+  "metrics": true,
+  "info": {
+    "description": "plugin to enable usage of KonkerIoT platform as a native datasource for Grafana",
+    "author": {
+      "name": "Alexandre Junqueira",
+      "url": "http://www.konkerlabs.com"
+    },
+    "keywords": [
+      "iot",
+      "konker",
+      "datasource"
+    ],
+    "logos": {
+      "small": "img/knk-logo.svg",
+      "large": "img/knk-principal.svg"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/konkerlabs/granfana"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/grafana/simple-datasource/blob/master/LICENSE"
+      }
+    ],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaVersion": "7.x.x",
+    "plugins": []
+  }
+}

@@ -1,0 +1,40 @@
+# HOWTO Replicate plugin 
+
+NOTE: this code runs over new version of Grafana (v7.x) onwards
+
+## create a basic template
+
+npx "@grafana/toolkit" plugin:create konker-ds
+? Select plugin type Datasource plugin
+✔ Fetching plugin template...
+? Plugin name konker-ds
+? Organization (used as part of plugin ID) konker
+? Description plugin to enable usage of KonkerIoT platform as a native datasource for Grafana
+? Keywords (separated by comma) iot, konker, datasource
+? Author (Alexandre Junqueira) Yes
+? Your URL (i.e. organisation url) http://www.konkerlabs.com
+    
+    Your plugin details
+    ---
+    Name:  konker-ds
+    ID:  konker-konker-ds
+    Description:  plugin to enable usage of KonkerIoT platform as a native datasource for Grafana
+    Keywords:  [ 'iot', 'konker', 'datasource' ]
+    Author:  Alexandre Junqueira
+    Organisation:  konker
+    Website:  http://www.konkerlabs.com
+    
+? Is that ok? Yes
+✔ Saving package.json and plugin.json files
+✔ Cleaning
+
+## change package.json to enable usage of moderm node 
+
+  "engines": {
+    "node": ">=12"
+  }
+
+## execution
+
+docker run --rm -d -p 3000:3000 -v $(pwd):/var/lib/grafana/plugins --name=grafana grafana/grafana:7.0.0-beta1
+
