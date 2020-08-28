@@ -14,6 +14,11 @@ import { MyQuery, MyDataSourceOptions, defaultQuery } from './types';
 import axios from 'axios';
 const moment = require('moment');
 
+interface FieldData {
+  name: string;
+  type: FieldType;
+}
+
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   apiToken?: string;
 
@@ -30,6 +35,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const from = range!.from.toISOString();
     const to = range!.to.toISOString();
 
+    console.log('DATASOURCE.QUERY => ');
     console.log('OPTIONS => ');
     console.log(options);
 
@@ -43,38 +49,80 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
         return this.getEvents(application.value, device.value, options.maxDataPoints, 'newest', channel, from, to).then(
           (res: any) => {
-            console.log('DATA READ FROM KONKER =>');
-            console.log(res);
-            const df = new MutableDataFrame({
-              refId: query.refId,
-              fields: [
-                { name: 'Time', type: FieldType.time },
+            // console.log('DATA READ FROM KONKER =>');
+            // console.log(res);
 
-                { name: 'Value', type: FieldType.number },
-              ],
-            });
-            res.data.result.map((v: any) => {
-              let d = { Time: moment(v.timestamp).valueOf(), Value: undefined };
+            if (res.data.result.length > 0) {
+              var fields = Object.keys(res.data.result[0].payload).map(f => {
+                let t = typeof res.data.result[0].payload[f];
+                let ft: FieldType;
+                switch (t) {
+                  case 'string': {
+                    ft = FieldType.string;
+                    break;
+                  }
+                  case 'number':
+                  case 'bigint':
+                    ft = FieldType.number;
+                    break;
+                  case 'boolean':
+                    ft = FieldType.boolean;
+                    break;
+                  default:
+                    ft = FieldType.other;
+                }
+                let x: FieldData = { name: f, type: ft };
+                return x;
+              });
+
+              // filter fields ... if required
               if (field) {
-                d.Value = v.payload[field].valueOf();
+                // console.log('ALL FIELDS => ');
+                // console.log(fields);
+
+                fields = fields.filter(v => {
+                  return v.name === field;
+                });
+
+                // console.log('FILTERED BY ' + field);
+                // console.log(fields);
               }
-              df.add(d);
-              return d;
-            });
-            console.log('DF => ');
-            console.log(df);
-            return df;
+
+              const df = new MutableDataFrame({
+                refId: query.refId,
+                fields: [...fields, { name: 'Time', type: FieldType.time }],
+              });
+              res.data.result.map((v: any) => {
+                // filter payload also
+                var payload = v.payload;
+                if (field) {
+                  // console.log(v.payload);
+                  payload = Object.fromEntries(Object.entries(payload).filter(v => v[0] === field));
+                  // console.log(payload);
+                }
+                let d = {
+                  Time: moment(v.timestamp).valueOf(),
+                  ...payload,
+                };
+                // console.log(d);
+                df.add(d, true);
+                return d;
+              });
+              console.log('DF => ');
+              console.log(df);
+              return df;
+            }
+            return;
           }
         );
-      } else {
-        return new MutableDataFrame({
-          refId: query.refId,
-          fields: [
-            { name: 'Time', values: [], type: FieldType.time },
-            { name: 'Value', values: [], type: FieldType.number },
-          ],
-        });
       }
+      return new MutableDataFrame({
+        refId: query.refId,
+        fields: [
+          { name: 'Time', values: [], type: FieldType.time },
+          { name: 'Value', values: [], type: FieldType.number },
+        ],
+      });
     });
 
     console.log('DATA =========> ');
@@ -109,9 +157,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   async getDevices(application: string | undefined, location?: string, tag?: string, size?: number) {
-    let _location = location ? `location=${location}` : '';
+    let _location = location && location !== 'default' ? `location=${location}` : '';
     let _tag = tag ? `tag=${tag}` : '';
-    let _size = size ? `tag=${size}` : '';
+    let _size = size ? `size=${size}` : '';
 
     let queryString = _size + (_location ? `&${_location}` : '') + (_tag ? `&${_tag}` : '');
 
@@ -144,7 +192,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
     let queryString = `${_limit}&${_sort}&q=${_q}`;
 
-    console.log(`KONEKR QUERY STRING = ${queryString}`);
+    console.log(`KONKER QUERY STRING = ${queryString}`);
 
     let url = `https://api.prod.konkerlabs.net/v1/${application}/incomingEvents/?${queryString}`;
     const options = this.getHeaders();

@@ -2,7 +2,8 @@ import React, { PureComponent, KeyboardEvent } from 'react';
 import { AsyncSelect, Label } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from './DataSource';
-import { MyDataSourceOptions, MyQuery } from './types';
+import { MyDataSourceOptions, MyQuery, defaultQuery } from './types';
+import defaults from 'lodash/defaults';
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -24,16 +25,27 @@ export class QueryEditor extends PureComponent<Props, QEState> {
     this.state = {
       application: props.query.application
         ? props.query.application
-        : { label: '-- select application --', value: 'default' },
-      location: props.query.location ? props.query.location : { label: '-- select location --', value: 'default' },
+        : { label: '-- select application --', value: undefined },
+      location: props.query.location ? props.query.location : { label: '-- select location --', value: undefined },
       device: props.query.device ? props.query.device : { label: '-- select a device --', value: undefined },
       channel: props.query.channel ? props.query.channel : { label: '-- select a channel --', value: undefined },
       field: props.query.field ? props.query.field : { label: '-- select a field --', value: undefined },
     };
   }
 
+  onApplicationKeyDown = (event: KeyboardEvent<Element>) => {
+    console.log('application key down ... reload applications from server');
+    console.log(event);
+    this.loadApplications().then(res => {
+      console.log('loaded applications from server');
+      console.log(res);
+    });
+  };
+
   onApplicationChange = (value: SelectableValue<string>) => {
     const { query, datasource } = this.props;
+
+    console.log('ON APPLICATION CHANGE');
 
     this.setState({ ...this.state, application: value });
     query.application = value;
@@ -63,6 +75,7 @@ export class QueryEditor extends PureComponent<Props, QEState> {
   onLocationChangeSelect = (value: SelectableValue<string>) => {
     const { query } = this.props;
     query.location = value;
+    console.log('ON LOCATION CHANGE');
     this.setState({ ...this.state, location: value });
     console.log(`SELECTED LOCATION = ${query.location}`);
     console.log(query.location);
@@ -71,6 +84,7 @@ export class QueryEditor extends PureComponent<Props, QEState> {
   onDeviceChangeSelect = (value: SelectableValue<string>) => {
     const { query, datasource } = this.props;
     query.device = value;
+    console.log('ON DEVICE CHANGE');
     this.setState({ ...this.state, device: value });
     console.log('SELECTED DEVICE');
     console.log(query.device);
@@ -89,16 +103,11 @@ export class QueryEditor extends PureComponent<Props, QEState> {
     console.log(event);
   };
 
-  onDeviceInputChange = (label: string) => {
-    console.log('device input change');
-    console.log(label);
-    this.setState({ ...this.state, deviceFilter: label });
-  };
-
   onChannelChange = (value: SelectableValue<string>) => {
     const { query } = this.props;
     query.channel = value;
 
+    console.log('ON CHANNEL CHANGE');
     // clear field
     query.field = undefined;
     this.setState({ ...this.state, channel: value, field: undefined });
@@ -106,8 +115,15 @@ export class QueryEditor extends PureComponent<Props, QEState> {
 
   onFieldChange = (value: SelectableValue<string>) => {
     const { query } = this.props;
+
+    console.log('ON FIELD CHANGE');
     query.field = value;
     this.setState({ ...this.state, field: value });
+  };
+
+  onChannelInputChange = (value: string) => {
+    console.log('on channel input change');
+    console.log(value);
   };
 
   loadApplications = () => {
@@ -212,35 +228,49 @@ export class QueryEditor extends PureComponent<Props, QEState> {
   };
 
   render() {
-    // const query = defaults(this.props.query, defaultQuery);
+    const query = defaults(this.props.query, defaultQuery);
+    console.log('RENDER QUERY => ');
+    console.log(query);
+    console.log('STATE =>');
+    console.log(this.state);
 
     return (
       <div className="gf-form">
         <Label>Application</Label>
         <AsyncSelect<string>
+          defaultOptions={true}
           loadOptions={this.loadApplications}
           value={this.state.application}
           onChange={this.onApplicationChange}
         />
         <AsyncSelect<string>
+          defaultOptions={true}
           loadOptions={this.loadLocations}
           value={this.state.location}
           onChange={this.onLocationChangeSelect}
         />
         <AsyncSelect<string>
+          defaultOptions={true}
           loadOptions={this.loadDevices}
           value={this.state.device}
           onChange={this.onDeviceChangeSelect}
-          onKeyDown={this.onDeviceKeyDown}
-          onInputChange={this.onDeviceInputChange}
         />
         <AsyncSelect<string>
+          cacheOptions={false}
+          defaultOptions
           loadOptions={this.loadChannels}
           value={this.state.channel}
           onChange={this.onChannelChange}
+          onInputChange={this.onChannelInputChange}
         />
 
-        <AsyncSelect<string> loadOptions={this.loadFields} value={this.state.field} onChange={this.onFieldChange} />
+        <AsyncSelect<string>
+          cacheOptions={false}
+          defaultOptions
+          loadOptions={this.loadFields}
+          value={this.state.field}
+          onChange={this.onFieldChange}
+        />
       </div>
     );
   }
