@@ -8,6 +8,7 @@ export interface MyQuery extends DataQuery {
   device?: SelectableValue<string>;
   channel?: SelectableValue<string>;
   field?: SelectableValue<string>;
+  fieldList?: Array<SelectableValue<string>>;
 }
 
 export const defaultQuery: Partial<MyQuery> = {

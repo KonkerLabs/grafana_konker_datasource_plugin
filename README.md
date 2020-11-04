@@ -15,7 +15,8 @@ yarn install
 2. Build plugin in development mode or run in watch mode
 ```BASH
 yarn dev
-docker run --rm -p 3000:3000 -v $(pwd):/var/lib/grafana/plugins --name=grafana grafana/grafana:7.0.0-beta1
+---- OLD --- docker run --rm -p 3000:3000 -v $(pwd):/var/lib/grafana/plugins --name=grafana grafana/grafana:7.0.0-beta1
+docker run --rm -p 3000:3000 -v $(pwd):/var/lib/grafana/plugins -v grafana-storage:/var/lib/grafana --name=grafana grafana/grafana:7.1.5
 ```
 or
 ```BASH

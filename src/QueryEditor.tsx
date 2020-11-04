@@ -1,5 +1,5 @@
 import React, { PureComponent, KeyboardEvent } from 'react';
-import { AsyncSelect, Label } from '@grafana/ui';
+import { AsyncSelect, Label, AsyncMultiSelect } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from './DataSource';
 import { MyDataSourceOptions, MyQuery, defaultQuery } from './types';
@@ -13,6 +13,7 @@ interface QEState {
   device?: SelectableValue<string>;
   channel?: SelectableValue<string>;
   field?: SelectableValue<string>;
+  fieldList?: Array<SelectableValue<string>>;
   channelsFields?: Map<string, Set<string>>;
   deviceFilter?: string;
 }
@@ -28,8 +29,9 @@ export class QueryEditor extends PureComponent<Props, QEState> {
         : { label: '-- select application --', value: undefined },
       location: props.query.location ? props.query.location : { label: '-- select location --', value: undefined },
       device: props.query.device ? props.query.device : { label: '-- select a device --', value: undefined },
-      channel: props.query.channel ? props.query.channel : { label: '-- select a channel --', value: undefined },
-      field: props.query.field ? props.query.field : { label: '-- select a field --', value: undefined },
+      channel: props.query.channel ? props.query.channel : { label: '-- load channels --', value: undefined },
+      field: props.query.field ? props.query.field : { label: '-- load fields --', value: undefined },
+      fieldList: props.query.fieldList ? props.query.fieldList : [{ label: '-- load fields --', value: undefined }],
     };
   }
 
@@ -94,7 +96,16 @@ export class QueryEditor extends PureComponent<Props, QEState> {
       .then((res: Map<string, Set<string>>) => {
         console.log('DEVICE CHANNEL AND FIELDS');
         console.log(res);
-        this.setState({ ...this.state, channelsFields: res });
+        // elect first element as default for this selection
+        const key = Object.keys(res)[0];
+        const _channel: SelectableValue<string> = { label: key, value: key };
+        const _fieldName = res
+          .get(key)
+          ?.values()
+          .next().value;
+        var _field: SelectableValue<string> = { label: _fieldName, value: _fieldName };
+
+        this.setState({ ...this.state, channelsFields: res, field: _field, channel: _channel });
       });
   };
 
@@ -110,7 +121,8 @@ export class QueryEditor extends PureComponent<Props, QEState> {
     console.log('ON CHANNEL CHANGE');
     // clear field
     query.field = undefined;
-    this.setState({ ...this.state, channel: value, field: undefined });
+    query.fieldList = [];
+    this.setState({ ...this.state, channel: value, field: undefined, fieldList: [] });
   };
 
   onFieldChange = (value: SelectableValue<string>) => {
@@ -119,6 +131,14 @@ export class QueryEditor extends PureComponent<Props, QEState> {
     console.log('ON FIELD CHANGE');
     query.field = value;
     this.setState({ ...this.state, field: value });
+  };
+
+  onFieldListChange = (value: Array<SelectableValue<string>>) => {
+    const { query } = this.props;
+
+    console.log('ON FIELD CHANGE');
+    query.fieldList = value;
+    this.setState({ ...this.state, fieldList: value });
   };
 
   onChannelInputChange = (value: string) => {
@@ -153,7 +173,9 @@ export class QueryEditor extends PureComponent<Props, QEState> {
       });
     } else {
       return new Promise<Array<SelectableValue<string>>>(resolve => {
+        console.log(`GETTING LOCATIONS FOR ${query.application}`);
         datasource.getLocations(query.application ? query.application.value : 'default').then(res => {
+          console.log(res);
           resolve(
             res.data.result.map((v: any) => {
               return { label: v.name, value: v.name };
@@ -270,6 +292,13 @@ export class QueryEditor extends PureComponent<Props, QEState> {
           loadOptions={this.loadFields}
           value={this.state.field}
           onChange={this.onFieldChange}
+        />
+        <AsyncMultiSelect<string>
+          cacheOptions={false}
+          defaultOptions
+          loadOptions={this.loadFields}
+          value={this.state.fieldList}
+          onChange={this.onFieldListChange}
         />
       </div>
     );

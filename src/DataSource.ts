@@ -110,6 +110,8 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
               });
               console.log('DF => ');
               console.log(df);
+              df.reverse();
+              console.log(df);
               return df;
             }
             return;
@@ -177,7 +179,8 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     from?: string,
     to?: string
   ) {
-    let _limit = limit ? `limit=${limit}` : '';
+    // let _limit = limit ? `limit=${limit}` : '';
+    let _limit = `limit=10000`;
     let _sort = sort ? `sort=${sort}` : '';
     let _q = `device:${guid}`;
     if (channel) {
